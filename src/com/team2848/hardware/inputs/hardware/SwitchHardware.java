@@ -1,0 +1,77 @@
+package com.team2848.hardware.inputs.hardware;
+
+import java.util.Optional;
+
+import com.team2848.hardware.Hardware;
+import com.team2848.hardware.inputs.software.DigitalIn;
+import com.team2848.hardware.registry.Registry;
+import com.team2848.hardware.registry.port_types.DIO;
+import com.team2848.util.AddList;
+import com.team2848.watch.Watchable;
+
+import edu.wpi.first.wpilibj.DigitalInput;
+
+/**
+ * represents any digital input (hall effect, infared proximity, limit switches, etc)
+ * 
+ * 
+ *
+ */
+public class SwitchHardware extends Hardware<DIO> {
+	boolean inverted;
+
+	/**
+	 * 
+	 * @param inverted whether to invert the sensor value stream
+	 * @param requestedPort the port to attempt to initialize this hardware
+	 * @param registry the registry associated with the robot
+	 */
+	public SwitchHardware(boolean inverted, DIO requestedPort, Registry registry) {
+		super(requestedPort, registry);
+		this.inverted = inverted;
+	}
+
+	/**
+	 * assumes switch is not inverted
+	 * 
+	 * @param requestedPort the port to attempt to initialize this hardware
+	 * @param registry the registry associated with the robot
+	 */
+	public SwitchHardware(DIO requestedPort, Registry registry) {
+		this(false, requestedPort, registry);
+	}
+
+	Optional<DigitalInput> wpiSwitch;
+
+	/**
+	 * @return a boolean stream that tracks the value of the sensor
+	 */
+	public DigitalIn getSwitchInput() {
+		return new DigitalIn(() -> wpiSwitch.map(this::getRawSwitch).orElse(false));
+	}
+
+	private boolean getRawSwitch(DigitalInput switchVal) {
+		return inverted ^ switchVal.get();
+	}
+
+	@Override
+	public AddList<Watchable> getSubWatchables(AddList<Watchable> stem) {
+		return stem.put(getSwitchInput().getWatchable("val"));
+	}
+
+	@Override
+	protected String getHardwareIdentifier() {
+		return "Switch";
+	}
+
+	@Override
+	public void init(DIO port) {
+		wpiSwitch = Optional.of(new DigitalInput(port.index()));
+	}
+
+	@Override
+	public void failInit() {
+		wpiSwitch = Optional.empty();
+	}
+
+}
